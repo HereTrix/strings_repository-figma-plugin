@@ -1,0 +1,226 @@
+<style>
+  .tabs {}
+
+  .item {}
+
+  .hide {
+    display: none !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .ms-auto {
+    margin-left: auto !important;
+  }
+
+  div {
+    padding: 5px;
+  }
+
+  button {
+    margin-left: 3px;
+    margin-right: 3px;
+  }
+
+  table {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: 5px;
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+</style>
+
+<div class="tabs">
+  <h1>Welcome to strings repository plugin</h1>
+</div>
+
+<div id="connection" class="tabs" style="display: none;">
+  <h2>String repository settings</h2>
+  <pre>Host (starting http or https): <input id="host" type="string" value=""></pre>
+  <p>Port: <input id="port" type="string"></p>
+  <p>API Token: <input id="token" type="string"></p>
+  <div class="stack">
+    <button id="connect" onclick="connect()">Save</button>
+    <button id="cancel" onclick="closeTab()" class="ms-auto">Cancel</button>
+  </div>
+</div>
+
+<div id="items" class="tabs" style="display: none;">
+  <div class="stack">
+    <h2>Select items to work with</h2>
+    <button id="logout" onclick="logout()" class="ms-auto">Logout</button>
+  </div>
+  <div id="languages-container"></div>
+  <div id="items-container" style="height: 150px; overflow: auto;"></div>
+  <div class="stack">
+    <button id="refresh" onclick="refresh()">Refresh selection</button>
+    <button id="pull" onclick="pull()">Pull</button>
+    <button id="push" onclick="push()">Push</button>
+    <button id="apply" onclick="apply()">Apply selected</button>
+    <button id="cancel" onclick="closeTab()" class="ms-auto">Cancel</button>
+  </div>
+</div>
+
+<script>
+  itemsContainer = document.getElementById('items-container');
+  languagesContainer = document.getElementById('languages-container');
+
+  function connect() {
+    const hostbox = document.getElementById('host');
+    const host = hostbox.value;
+    const tokenbox = document.getElementById('token');
+    const token = tokenbox.value;
+    const codebox = document.getElementById('port');
+    const code = codebox.value;
+    const message = { 'host': host, 'token': token, 'port': code };
+    parent.postMessage({ pluginMessage: { type: 'connect', message } }, '*')
+  }
+
+  function closeTab() {
+    parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+  }
+
+  function refresh() {
+    parent.postMessage({ pluginMessage: { type: 'refresh' } }, '*')
+  }
+
+  function push() {
+    selected = getSelectedItems();
+    parent.postMessage({ pluginMessage: { type: 'push', selected } }, '*')
+  }
+
+  function pull() {
+    selected = getSelectedItems();
+    parent.postMessage({ pluginMessage: { type: 'pull', selected } }, '*')
+  }
+
+  function apply() {
+    parent.postMessage({ pluginMessage: { type: 'apply' } }, '*')
+  }
+
+  function logout() {
+    parent.postMessage({ pluginMessage: { type: 'logout' } }, '*')
+  }
+
+  window.onmessage = async (msg) => {
+    const { type, content } = msg.data.pluginMessage;
+    switch (type) {
+      case "setup":
+        changeTab('connection');
+        break;
+      case "items":
+        changeTab('items');
+        buildItemsList(content);
+        break;
+      case "languages":
+        buildLanguagesList(content);
+        break;
+      case "error":
+        alert(content);
+        break;
+    }
+  }
+
+  function changeTab(selected) {
+    const selectedTab = document.getElementById(selected);
+    if (selectedTab) {
+      document.querySelectorAll('.tabs').forEach(tab => {
+        tab.style.display = 'none';
+      });
+
+      selectedTab.style.display = 'block';
+    }
+  }
+
+  function buildItemsList(content) {
+    itemsContainer.innerHTML = '';
+
+    table = document.createElement('table');
+    table.style = 'width: 100%'
+    itemsContainer.appendChild(table);
+
+    row = document.createElement('tr');
+    table.appendChild(row);
+    th = document.createElement('th');
+    row.appendChild(th)
+    th = document.createElement('th');
+    textNode = document.createTextNode('Localization key');
+    th.appendChild(textNode)
+    row.appendChild(th)
+    th = document.createElement('th');
+    textNode = document.createTextNode('Current translation');
+    th.appendChild(textNode)
+    row.appendChild(th)
+
+    for (item in content) {
+      row = document.createElement('tr');
+      table.appendChild(row)
+
+      listItem = document.createElement('li');
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = item
+      checkbox.className = 'item'
+      const textContent = document.createTextNode(item);
+
+      cell = document.createElement('td');
+      cell.appendChild(checkbox);
+      row.appendChild(cell)
+      cell = document.createElement('td');
+      cell.appendChild(textContent);
+      row.appendChild(cell)
+      const translation = document.createElement('pre');
+      translation.textContent = content[item];
+      cell = document.createElement('td');
+      cell.appendChild(translation);
+      row.appendChild(cell)
+    }
+  }
+
+  function getSelectedItems() {
+    items = document.querySelectorAll('.item');
+    selected = []
+    for (item of items) {
+      if (item.checked) {
+        selected.push(item.value);
+      }
+    }
+    return selected;
+  }
+
+  function buildLanguagesList(content) {
+    languagesContainer.innerHTML = ''
+
+    label = document.createElement('span');
+    label.style = "padding: 5px"
+    label.textContent = 'Select language';
+    languagesContainer.appendChild(label);
+
+    select = document.createElement('select');
+    select.addEventListener('change', onLanguageChange)
+    languagesContainer.appendChild(select);
+    for (language of content) {
+      option = document.createElement('option');
+      option.value = language;
+      option.textContent = language
+      select.appendChild(option);
+    }
+  }
+
+  function onLanguageChange(event) {
+    value = event.target.value;
+    parent.postMessage({ pluginMessage: { type: 'language', value } }, '*')
+  }
+</script>

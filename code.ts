@@ -7,6 +7,7 @@ enum MessageType {
   setup = 'setup',
   items = 'items',
   languages = 'languages',
+  toggleSelector = 'toggleSelector'
 }
 
 interface TranslationAPIMessage {
@@ -96,6 +97,8 @@ if (figma.editorType === 'figma') {
       case 'logout':
         logout()
         break
+      case 'toggleSelection':
+        toggleSelection()
     }
   };
 }
@@ -153,6 +156,17 @@ function applyChanges() {
     for (const item in nodes) {
       updateTextChild(selection, item, nodes[item].translation)
     }
+  }
+}
+
+function toggleSelection() {
+  const keys = Object.keys(nodes)
+  if (keys.length > 0) {
+    const value = !nodes[keys[0]].selected
+    for (const nodeKey in nodes) {
+      nodes[nodeKey].selected = value
+    }
+    send(MessageType.items, nodes)
   }
 }
 

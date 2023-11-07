@@ -1,7 +1,9 @@
 <style>
   .tabs {}
 
-  .item {}
+  .item {
+    align-self: center !important;
+  }
 
   .hide {
     display: none !important;
@@ -113,6 +115,10 @@
     parent.postMessage({ pluginMessage: { type: 'logout' } }, '*')
   }
 
+  function selectAll() {
+    parent.postMessage({ pluginMessage: { type: 'toggleSelection' } }, '*')
+  }
+
   window.onmessage = async (msg) => {
     const { type, content } = msg.data.pluginMessage;
     switch (type) {
@@ -128,6 +134,10 @@
         break;
       case "error":
         alert(content);
+        break;
+      case "toggleSelector":
+        const select_all = document.getElementById('select-all');
+        select_all.checked = content
         break;
     }
   }
@@ -153,6 +163,11 @@
     row = document.createElement('tr');
     table.appendChild(row);
     th = document.createElement('th');
+    const select_all = document.createElement("input");
+    select_all.type = "checkbox";
+    select_all.className = 'select-all'
+    select_all.onclick = selectAll
+    th.appendChild(select_all)
     row.appendChild(th)
     th = document.createElement('th');
     textNode = document.createTextNode('Localization key');

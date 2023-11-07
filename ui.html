@@ -173,6 +173,7 @@
       checkbox.type = "checkbox";
       checkbox.value = item
       checkbox.className = 'item'
+      checkbox.checked = content[item].selected
       const textContent = document.createTextNode(item);
 
       cell = document.createElement('td');
@@ -182,7 +183,7 @@
       cell.appendChild(textContent);
       row.appendChild(cell)
       const translation = document.createElement('pre');
-      translation.textContent = content[item];
+      translation.textContent = content[item].translation;
       cell = document.createElement('td');
       cell.appendChild(translation);
       row.appendChild(cell)

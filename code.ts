@@ -9,9 +9,14 @@ enum MessageType {
   languages = 'languages',
 }
 
-interface TranslationMessage {
+interface TranslationAPIMessage {
   token: string
   translation: string
+}
+
+interface NodeItem {
+  translation: string
+  selected: boolean
 }
 
 interface Credentials {
@@ -26,7 +31,7 @@ figma.skipInvisibleInstanceChildren = true
 
 var credentials: Credentials | undefined = undefined
 
-var nodes: { [id: string]: string } = {}
+var nodes: { [id: string]: NodeItem } = {}
 var languageCode = 'en'
 
 // Runs this code if the plugin is run in Figma
@@ -100,18 +105,20 @@ function send(type: MessageType, data: any) {
 }
 
 function sendError(data: any) {
-  console.log(`error: ${data}`)
   figma.ui.postMessage({ type: 'error', content: data })
 }
 
 function fetchTextNodesFromSelection() {
-  var textNodes: { [id: string]: string } = {}
+  var textNodes: { [id: string]: NodeItem } = {}
 
   for (const node of figma.currentPage.selection) {
     const nodes = getTextNodesFrom(node, [])
     for (const elm of nodes) {
       if (elm.type === "TEXT") {
-        textNodes[elm.name] = elm.characters
+        textNodes[elm.name] = {
+          translation: elm.characters,
+          selected: false
+        }
       }
     }
   }
@@ -134,10 +141,9 @@ function getTextNodesFrom(node: SceneNode, textNodes: SceneNode[]): SceneNode[] 
   return textNodes
 }
 
-function updateNodes(data: TranslationMessage[]) {
-  console.log(JSON.stringify(data))
+function updateSelectedNodes(data: TranslationAPIMessage[]) {
   for (const item of data) {
-    nodes[item.token] = item.translation
+    nodes[item.token].translation = item.translation
   }
   send(MessageType.items, nodes)
 }
@@ -145,7 +151,7 @@ function updateNodes(data: TranslationMessage[]) {
 function applyChanges() {
   for (const selection of figma.currentPage.selection) {
     for (const item in nodes) {
-      updateTextChild(selection, item, nodes[item])
+      updateTextChild(selection, item, nodes[item].translation)
     }
   }
 }
@@ -172,12 +178,14 @@ async function pull(items: string[]) {
     return
   }
 
+  for (const item of items) {
+    nodes[item].selected = true
+  }
+
   const data = {
     code: languageCode,
     tokens: items
   }
-
-  console.log(JSON.stringify(data))
 
   fetch(`${credentials.host}:${credentials.port}/api/plugin/pull`, {
     method: "POST",
@@ -190,7 +198,7 @@ async function pull(items: string[]) {
       }
       return Promise.reject(response);
     })
-    .then((response) => updateNodes(response))
+    .then((response) => updateSelectedNodes(response))
     .catch((error) => error.json().then((json: any) => sendError(json.error)))
 }
 
@@ -199,12 +207,12 @@ async function push(items: string[]) {
     return
   }
 
-  var translations: TranslationMessage[] = []
+  var translations: TranslationAPIMessage[] = []
 
-  for (const item in items) {
+  for (const item of items) {
     translations.push({
       token: item,
-      translation: nodes[item]
+      translation: nodes[item].translation
     })
   }
 
@@ -288,7 +296,6 @@ function storeCreds() {
 }
 
 function logout() {
-  console.log("Logged out")
   figma.clientStorage.deleteAsync('strings_repository_credentials')
   send(MessageType.setup, {})
 }

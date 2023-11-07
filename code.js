@@ -91,7 +91,6 @@ function send(type, data) {
     figma.ui.postMessage({ type: type, content: data });
 }
 function sendError(data) {
-    console.log(`error: ${data}`);
     figma.ui.postMessage({ type: 'error', content: data });
 }
 function fetchTextNodesFromSelection() {
@@ -100,7 +99,10 @@ function fetchTextNodesFromSelection() {
         const nodes = getTextNodesFrom(node, []);
         for (const elm of nodes) {
             if (elm.type === "TEXT") {
-                textNodes[elm.name] = elm.characters;
+                textNodes[elm.name] = {
+                    translation: elm.characters,
+                    selected: false
+                };
             }
         }
     }
@@ -119,17 +121,16 @@ function getTextNodesFrom(node, textNodes) {
     }
     return textNodes;
 }
-function updateNodes(data) {
-    console.log(JSON.stringify(data));
+function updateSelectedNodes(data) {
     for (const item of data) {
-        nodes[item.token] = item.translation;
+        nodes[item.token].translation = item.translation;
     }
     send(MessageType.items, nodes);
 }
 function applyChanges() {
     for (const selection of figma.currentPage.selection) {
         for (const item in nodes) {
-            updateTextChild(selection, item, nodes[item]);
+            updateTextChild(selection, item, nodes[item].translation);
         }
     }
 }
@@ -156,11 +157,13 @@ function pull(items) {
         if (!credentials) {
             return;
         }
+        for (const item of items) {
+            nodes[item].selected = true;
+        }
         const data = {
             code: languageCode,
             tokens: items
         };
-        console.log(JSON.stringify(data));
         fetch(`${credentials.host}:${credentials.port}/api/plugin/pull`, {
             method: "POST",
             headers: headers(),
@@ -172,7 +175,7 @@ function pull(items) {
             }
             return Promise.reject(response);
         })
-            .then((response) => updateNodes(response))
+            .then((response) => updateSelectedNodes(response))
             .catch((error) => error.json().then((json) => sendError(json.error)));
     });
 }
@@ -182,10 +185,10 @@ function push(items) {
             return;
         }
         var translations = [];
-        for (const item in items) {
+        for (const item of items) {
             translations.push({
                 token: item,
-                translation: nodes[item]
+                translation: nodes[item].translation
             });
         }
         const data = {
@@ -265,7 +268,6 @@ function storeCreds() {
     figma.clientStorage.setAsync('strings_repository_credentials', credentials);
 }
 function logout() {
-    console.log("Logged out");
     figma.clientStorage.deleteAsync('strings_repository_credentials');
     send(MessageType.setup, {});
 }

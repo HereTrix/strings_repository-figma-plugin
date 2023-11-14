@@ -3,6 +3,10 @@ StringsRepository Figma plugin
 
 Simple plugin for figma which uses [string repository project](https://github.com/HereTrix/strings_repository). Plugin uses only current selection to simplify work with translation.
 
+Installation
+--------
+Figma plugin can be found on Figma Community [Page](https://www.figma.com/community/plugin/1304005392835280443/strings-repository) or installed manually by downloading source code.
+
 Overview
 --------
 

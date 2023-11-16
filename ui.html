@@ -5,6 +5,10 @@
     align-self: center !important;
   }
 
+  .align-content-center {
+    align-content: center !important;
+  }
+
   .hide {
     display: none !important;
     margin: 0;
@@ -21,6 +25,24 @@
     margin-left: auto !important;
   }
 
+  .form-label {
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .card {
+    border-radius: 10px;
+    border: 1px;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+    padding: 20px;
+  }
+
+  input {
+    margin: 3px;
+    padding: 1px;
+    display: block;
+  }
+
   div {
     padding: 5px;
   }
@@ -28,6 +50,7 @@
   button {
     margin-left: 3px;
     margin-right: 3px;
+    border-radius: 5px;
   }
 
   table {
@@ -41,20 +64,37 @@
     border: 1px solid black;
     border-collapse: collapse;
   }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
 </style>
 
 <div class="tabs">
   <h1>Welcome to strings repository plugin</h1>
 </div>
 
-<div id="connection" class="tabs" style="display: none;">
+<div id="connection" class="tabs align-content-center" style="display: none;">
   <h2>String repository settings</h2>
-  <pre>Host (starting http or https): <input id="host" type="string" value=""></pre>
-  <p>Port: <input id="port" type="string"></p>
-  <p>API Token: <input id="token" type="string"></p>
-  <div class="stack">
-    <button id="connect" onclick="connect()">Save</button>
-    <button id="cancel" onclick="closeTab()" class="ms-auto">Cancel</button>
+  <div class="form">
+    <div class="card">
+      <label class="form-label">Host (starting http or https):
+        <input id="host" type="string" value="">
+      </label>
+      <label class="form-label">Port:
+        <input id="port" type="string">
+      </label>
+      <label class="form-label">API Token:
+        <input id="token" type="string">
+      </label>
+      <div class="stack">
+        <button id="connect" onclick="connectCreds()">Save</button>
+        <button id="cancel" onclick="closeTab()" class="ms-auto">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -78,7 +118,7 @@
   itemsContainer = document.getElementById('items-container');
   languagesContainer = document.getElementById('languages-container');
 
-  function connect() {
+  function connectCreds() {
     const hostbox = document.getElementById('host');
     const host = hostbox.value;
     const tokenbox = document.getElementById('token');
